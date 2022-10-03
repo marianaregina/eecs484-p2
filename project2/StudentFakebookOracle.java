@@ -125,6 +125,52 @@ public final class StudentFakebookOracle extends FakebookOracle {
                 info.setCommonNameCount(42);
                 return info;
             */
+
+            ResultSet rst = stmt.executeQuery(
+                "SELECT LENGTH(First_Name) AS FNameLen, First_Name " +  // length of first name
+                "FROM " + UsersTable + " " +    // from all users
+                "WHERE First_Name IS NOT NULL " +   // for which a first name is available
+                "GROUP BY First_Name " +    // group into buckets by first name
+                "ORDER BY FNameLen DESC, First_Name ASC"
+            );
+
+            String longestName = "";
+            String shortestName = "";
+            String mostCommonName = "";
+            int numWCommonName = 0;
+
+            while (rst.next()) {
+                if (rst.isFirst()) {
+                    // If it's the first record, must be the longest name
+                    shortestName = rst.getString();
+                    while (rst.next()) {
+                        if ()
+                    }
+
+                }
+            }
+
+            while (rst.next()) {
+                if (rst.isLast()) {
+
+                }
+            }
+
+            FirstNameInfo info = new FirstNameInfo();
+
+            // **SQL Query** 
+            // order first names by length, longest first, return result set
+
+            // longest name: first record
+            // shortest name: last record
+            // if it's a tie, we must report all names that tie
+            // 1. step through records
+            //     2. if first record --> longest name
+            //          - check tie?
+            //     3. if last record --> shortest name
+            //          - check tie?
+            
+
             return new FirstNameInfo(); // placeholder for compilation
         } catch (SQLException e) {
             System.err.println(e.getMessage());
