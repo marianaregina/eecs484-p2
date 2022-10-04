@@ -1,16 +1,38 @@
 -- Query 1 --
-
 -- Finding longest and shortest
-SELECT First_Name, LENGTH(First_Name) AS len
+SELECT LENGTH(First_Name) AS len
 FROM project2.Public_Users
-GROUP BY First_Name
-ORDER BY len DESC, First_Name DESC;
+ORDER BY len DESC;
 
--- Most common first name
-SELECT First_Name, COUNT(*) AS nameCount
+-- Select all names with longest length in alphabetical order
+SELECT DISTINCT First_Name
 FROM project2.Public_Users
-GROUP BY First_Name
-ORDER BY nameCount DESC;
+WHERE LENGTH(First_Name) = <n>
+ORDER BY First_Name ASC;
+
+-- Select all names with shortest length in alphabetical order
+SELECT DISTINCT First_Name
+FROM project2.Public_Users
+WHERE LENGTH(First_Name) = <n>
+ORDER BY First_Name ASC;
+
+-- Get frequency of most common first name
+SELECT *
+FROM (
+    SELECT COUNT(*) AS nameCount
+    FROM project2.Public_Users
+    GROUP BY First_Name
+    ORDER BY nameCount DESC)
+WHERE ROWNUM <= 1;
+
+-- Get most common first name
+SELECT First_Name
+FROM (
+    SELECT First_Name, COUNT(*) AS nameCount
+    FROM project2.Public_Users
+    GROUP BY First_Name
+    ORDER BY nameCount DESC)
+WHERE nameCount = <n>;
 
 -- Query 2 --
 SELECT p1.USER_ID, First_Name, Last_Name
@@ -22,8 +44,8 @@ MINUS
 SELECT DISTINCT f2.USER2_ID
 FROM project2.Public_Friends f2;
 
-SELECT u.USER_ID, u.First_Name, u.Last_Name
-FROM project2.Public_Users u
+SELECT U.USER_ID, U.First_Name, U.Last_Name
+FROM project2.Public_Users U
 LEFT JOIN (
     SELECT p1.USER_ID
     FROM project2.Public_Users p1
@@ -33,8 +55,9 @@ LEFT JOIN (
     MINUS
     SELECT DISTINCT f2.USER2_ID
     FROM project2.Public_Friends f2
-)
-ORDER BY u.USER_ID ASC;
+) have_no_friends
+ON have_no_friends.USER_ID = U.USER_ID
+ORDER BY U.USER_ID ASC;
 
 -- Query 3 --
 SELECT U.USER_ID, U.First_Name, U.Last_Name
