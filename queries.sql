@@ -110,6 +110,12 @@ ORDER BY U.USER_ID ASC;
 -- Query 6 --
 
 -- Query 7 --
+SELECT C.STATE_NAME, COUNT(*)
+FROM project2.Public_User_Events E
+LEFT JOIN project2.Public_Cities C
+ON E.EVENT_CITY_ID = C.CITY_ID
+GROUP BY C.STATE_NAME
+ORDER BY COUNT(*) DESC;
 
 -- Query 8 --
 
