@@ -125,53 +125,78 @@ public final class StudentFakebookOracle extends FakebookOracle {
                 info.setCommonNameCount(42);
                 return info;
             */
+            FirstNameInfo info = new FirstNameInfo();   // data structure for output
 
             ResultSet rst = stmt.executeQuery(
-                "SELECT LENGTH(First_Name) AS FNameLen, First_Name " +  // length of first name
+                "SELECT LENGTH(First_Name) AS len " +  // length of first name
                 "FROM " + UsersTable + " " +    // from all users
-                "WHERE First_Name IS NOT NULL " +   // for which a first name is available
-                "GROUP BY First_Name " +    // group into buckets by first name
-                "ORDER BY FNameLen DESC, First_Name ASC"
-            );
+                "ORDER BY len DESC");
 
-            String longestName = "";
-            String shortestName = "";
-            String mostCommonName = "";
-            int numWCommonName = 0;
-
-            while (rst.next()) {
-                if (rst.isFirst()) {
-                    // If it's the first record, must be the longest name
-                    shortestName = rst.getString();
-                    while (rst.next()) {
-                        if ()
-                    }
-
+            int lenLongest = 0;     // length of longest name
+            int lenShortest = 0;    // length of shortest name
+            while (rst.next()) { // step through result rows/records one by one
+                if (rst.isFirst()) { // if first record
+                    lenLongest = rst.getInt(1); //   it is the shortest
+                }
+                if (rst.isLast()) { // if last record
+                    lenShortest = rst.getInt(1); //   it is the longest
                 }
             }
 
-            while (rst.next()) {
-                if (rst.isLast()) {
-
-                }
-            }
-
-            FirstNameInfo info = new FirstNameInfo();
-
-            // **SQL Query** 
-            // order first names by length, longest first, return result set
-
-            // longest name: first record
-            // shortest name: last record
-            // if it's a tie, we must report all names that tie
-            // 1. step through records
-            //     2. if first record --> longest name
-            //          - check tie?
-            //     3. if last record --> shortest name
-            //          - check tie?
+            // -- Select all names with longest length in alphabetical order
+            rst = stmt.executeQuery(
+                "SELECT DISTINCT First_Name " +
+                "FROM " + UsersTable + " " +
+                "WHERE LENGTH(First_Name) = " + lenLongest + " " +
+                "ORDER BY First_Name ASC");
             
+            while (rst.next()) {    // add all longest names
+                info.addLongName(rst.getString(1));
+            }
 
-            return new FirstNameInfo(); // placeholder for compilation
+            // -- Select all names with shortest length in alphabetical order
+            rst = stmt.executeQuery(
+                "SELECT DISTINCT First_Name " +
+                "FROM " + UsersTable + " " +
+                "WHERE LENGTH(First_Name) = " + lenShortest + " " +
+                "ORDER BY First_Name ASC");
+            
+            while (rst.next()) {
+                info.addShortName(rst.getString(1));
+            }
+            
+            // -- Get frequency of most common first name
+            rst = stmt.executeQuery(
+                "SELECT * FROM ( " +
+                "SELECT COUNT(*) AS nameCount " +
+                "FROM " + UsersTable + " " +
+                "GROUP BY First_Name " +
+                "ORDER BY nameCount DESC " +
+                ") WHERE ROWNUM <=1");
+
+            int commonCount = 0;
+            while (rst.next()) {
+                commonCount = rst.getInt(1);
+            }
+            info.setCommonNameCount(commonCount);
+            
+            // -- Get most common first name
+            rst = stmt.executeQuery(
+                "SELECT First_Name FROM ( " +
+                "SELECT First_Name, COUNT(*) AS nameCount " +
+                "FROM " + UsersTable + " " +
+                "GROUP BY First_Name " +
+                "ORDER BY nameCount DESC " +
+                ") WHERE nameCount = " + commonCount);
+
+            while (rst.next()) {
+                info.addCommonName(rst.getString(1));
+            }
+            // * Close resources being used
+            rst.close();
+            stmt.close(); // if you close the statement first, the result set gets closed automatically
+
+            return info; // placeholder for compilation
         } catch (SQLException e) {
             System.err.println(e.getMessage());
             return new FirstNameInfo();
