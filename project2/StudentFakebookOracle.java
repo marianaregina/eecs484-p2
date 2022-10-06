@@ -227,7 +227,7 @@ public final class StudentFakebookOracle extends FakebookOracle {
             ResultSet rst = stmt.executeQuery(
                 "SELECT U.USER_ID, U.First_Name, U.Last_Name " +
                 "FROM " + UsersTable + " U " +
-                "LEFT JOIN (" +
+                "INNER JOIN (" +
                 "SELECT p1.USER_ID " +
                 "FROM " + UsersTable + " p1 " +
                 "MINUS " +
@@ -509,7 +509,44 @@ public final class StudentFakebookOracle extends FakebookOracle {
                 info.addState("New Hampshire");
                 return info;
             */
-            return new EventStateInfo(-1); // placeholder for compilation
+            ResultSet rst = stmt.executeQuery(
+                "SELECT * " +
+                "FROM ( " +
+                "SELECT C.STATE_NAME, COUNT(*) as eventCount " +
+                "FROM " + EventsTable + " E " +
+                "LEFT JOIN " + CitiesTable + " C " +
+                "ON E.EVENT_CITY_ID = C.CITY_ID " +
+                "GROUP BY C.STATE_NAME " +
+                "ORDER BY eventCount DESC ) " +
+                "WHERE ROWNUM <= 1");
+            
+            int eventCount = 0;
+            while (rst.next()) {
+                if (rst.isFirst()) {
+                    eventCount = rst.getInt(2);
+                    break;
+                }
+            }
+            EventStateInfo info = new EventStateInfo(eventCount);
+
+            rst = stmt.executeQuery(
+                "SELECT * FROM ( " +
+                "SELECT C.STATE_NAME, COUNT(*) as eventCount " +
+                "FROM " + EventsTable + " E " +
+                "LEFT JOIN " + CitiesTable + " C " +
+                "ON E.EVENT_CITY_ID = C.CITY_ID " +
+                "GROUP BY C.STATE_NAME " +
+                "ORDER BY STATE_NAME ASC) " +
+                "WHERE eventCount = " + eventCount);
+            
+            while (rst.next()) {
+                info.addState(rst.getString(1));
+            }
+
+            rst.close();
+            stmt.close();
+
+            return info;
         } catch (SQLException e) {
             System.err.println(e.getMessage());
             return new EventStateInfo(-1);

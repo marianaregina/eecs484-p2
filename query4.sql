@@ -1,0 +1,32 @@
+-- Query 4 --
+LEFT JOIN project2.Public_Photos P
+ON (T.TAG_PHOTO_ID = P.PHOTO_ID)
+LEFT JOIN project2.Public_Albums A
+ON (P.ALBUM_ID = A.ALBUM_ID)
+LEFT JOIN project2.Public_Users U
+ON (T.TAG_SUBJECT_ID = U.USER_ID)
+
+-- get top N tags
+CREATE VIEW top_n_tags AS
+SELECT *
+FROM
+(
+    SELECT T.TAG_PHOTO_ID, COUNT(*) AS num_tagged_users
+    FROM project2.Public_Tags T
+    GROUP BY T.TAG_PHOTO_ID
+    ORDER BY num_tagged_users, T.TAG_PHOTO_ID ASC
+)
+WHERE ROWNUM <=5;
+
+SELECT T.num_tagged_users, T.TAG_PHOTO_ID, P.PHOTO_LINK, U.USER_ID, U.First_Name, U.Last_Name
+FROM top_n_tags T
+LEFT JOIN project2.Public_Photos P
+ON (T.TAG_PHOTO_ID = P.PHOTO_ID)
+WHERE T.TAG_PHOTO_ID IS NOT NULL AND P.PHOTO_ID IS NOT NULL
+LEFT JOIN project2.Public_Albums A
+ON (P.ALBUM_ID = A.ALBUM_ID)
+WHERE P.ALBUM_ID IS NOT NULL AND A.ALBUM_ID IS NOT NULL
+LEFT JOIN project2.Public_Users U
+ON (T.TAG_SUBJECT_ID = U.USER_ID)
+WHERE T.TAG_SUBJECT_ID IS NOT NULL AND U.USER_ID IS NOT NULL
+ORDER BY U.USER_ID ASC;

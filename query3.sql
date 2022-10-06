@@ -1,0 +1,11 @@
+-- Query 3 --
+SELECT U.USER_ID, U.First_Name, U.Last_Name
+FROM project2.Public_Users U
+LEFT JOIN project2.Public_User_Current_City C
+ON (U.USER_ID = C.USER_ID)
+LEFT JOIN project2.Public_User_Hometown_City H
+ON (U.USER_ID = H.USER_ID)
+WHERE C.CURRENT_CITY_ID IS NOT NULL 
+    AND H.HOMETOWN_CITY_ID IS NOT NULL
+    AND C.CURRENT_CITY_ID != H.HOMETOWN_CITY_ID
+ORDER BY U.USER_ID ASC;
