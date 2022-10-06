@@ -13,10 +13,10 @@ CREATE VIEW user_friends AS
 SELECT *
 FROM (
     SELECT u.USER_ID, u.First_Name, u.Last_Name
-    FROM project2.Public_Users u
-    LEFT JOIN user_friends f
+    FROM user_friends f
+    LEFT JOIN project2.Public_Users u
     ON f.FRIEND_USER_ID = u.USER_ID
-    ORDER BY SUM(u.MONTH_OF_BIRTH, u.DAY_OF_BIRTH, u.YEAR_OF_BIRTH) ASC, u.USER_ID DESC;
+    ORDER BY u.YEAR_OF_BIRTH ASC, u.MONTH_OF_BIRTH ASC, u.DAY_OF_BIRTH ASC, u.USER_ID DESC
 )
 WHERE ROWNUM <= 1;
 
@@ -24,9 +24,11 @@ WHERE ROWNUM <= 1;
 SELECT *
 FROM (
     SELECT u.USER_ID, u.First_Name, u.Last_Name
-    FROM project2.Public_Users u
-    LEFT JOIN user_friends f
+    FROM user_friends f
+    LEFT JOIN project2.Public_Users u
     ON f.FRIEND_USER_ID = u.USER_ID
-    ORDER BY SUM(u.MONTH_OF_BIRTH, u.DAY_OF_BIRTH, u.YEAR_OF_BIRTH) DESC, u.USER_ID DESC;
+    ORDER BY u.YEAR_OF_BIRTH DESC, u.MONTH_OF_BIRTH DESC, u.DAY_OF_BIRTH DESC, u.USER_ID DESC
 )
 WHERE ROWNUM <= 1;
+
+DROP VIEW user_friends;

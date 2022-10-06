@@ -241,7 +241,7 @@ public final class StudentFakebookOracle extends FakebookOracle {
                 "ORDER BY U.USER_ID ASC");
             
             while (rst.next()) {
-                int tempId = rst.getInt(1);
+                long tempId = rst.getLong(1);
                 String tempFirst = rst.getString(2);
                 String tempLast = rst.getString(3);
                 UserInfo u1 = new UserInfo(tempId, tempFirst, tempLast);
@@ -289,7 +289,7 @@ public final class StudentFakebookOracle extends FakebookOracle {
                 "ORDER BY U.USER_ID ASC");
 
             while (rst.next()) {
-                int tempId = rst.getInt(1);
+                long tempId = rst.getLong(1);
                 String tempFirst = rst.getString(2);
                 String tempLast = rst.getString(3);
                 UserInfo u1 = new UserInfo(tempId, tempFirst, tempLast);
@@ -365,27 +365,27 @@ public final class StudentFakebookOracle extends FakebookOracle {
             mp.addSharedPhoto(p);
             results.add(mp);
             */
-            ResultSet rst = stmt.executeQuery(
+            stmt.executeUpdate(
                 "CREATE VIEW pairs AS " +
                 "SELECT u1.USER_ID AS USER1_ID, u2.USER_ID AS USER2_ID " +
                 "FROM " + UsersTable + " u1, " + UsersTable + " u2 " +
-                "WHERE (abs(u1.YEAR_OF_BIRTH - u2.YEAR_OF_BIRTH) <= 2) " +
+                "WHERE (abs(u1.YEAR_OF_BIRTH - u2.YEAR_OF_BIRTH) <= " + yearDiff + ") " +
                 "AND (u1.GENDER = u2.GENDER) " +
                 "AND (u1.USER_ID < u2.USER_ID) " +
                 "AND (u1.USER_ID != u2.USER_ID)");
 
-            rst = stmt.executeQuery(
+            stmt.executeUpdate(
                 "CREATE VIEW already_friends AS " +
                 "SELECT p.USER1_ID AS USER1_ID, p.USER2_ID AS USER2_ID " +
                 "FROM pairs p, " + FriendsTable + " f " +
                 "WHERE ((p.USER1_ID = f.USER1_ID) " +
                 "AND (p.USER2_ID = f.USER2_ID))");
 
-            rst = stmt.executeQuery(
+            ResultSet rst = stmt.executeQuery(
                 "SELECT * FROM pairs p MINUS " +
                 "SELECT * FROM already_friends");
 
-            rst = stmt.executeQuery(
+            stmt.executeUpdate(
                 "CREATE VIEW tag_photos AS " +
                 "SELECT pairs.USER1_ID AS USER1_ID, pairs.USER2_ID AS USER2_ID, " +
                 "T1.TAG_PHOTO_ID AS PHOTO_ID, P.PHOTO_LINK AS PHOTO_LINK, " +
@@ -395,9 +395,9 @@ public final class StudentFakebookOracle extends FakebookOracle {
                 "LEFT JOIN " + AlbumsTable + " A ON P.ALBUM_ID = A.ALBUM_ID " +
                 "WHERE T1.TAG_PHOTO_ID = T2.TAG_PHOTO_ID " +
                 "AND T1.TAG_SUBJECT_ID = pairs.USER1_ID " +
-                "AND T2.TAG_SUBJECT_ID = pairs.USER2_ID ");
+                "AND T2.TAG_SUBJECT_ID = pairs.USER2_ID");
         
-            rst = stmt.executeQuery(
+            stmt.executeUpdate(
                 "CREATE VIEW final_pairs AS " +
                 "SELECT * FROM ( " +
                 "SELECT p.USER1_ID, p.USER2_ID " +
@@ -407,7 +407,7 @@ public final class StudentFakebookOracle extends FakebookOracle {
                 "WHERE t.PHOTO_ID IS NOT NULL " +
                 "GROUP BY (p.USER1_ID, p.USER2_ID) " +
                 "ORDER BY COUNT(*) DESC, USER1_ID ASC, USER2_ID DESC) " +
-                "WHERE ROWNUM <= 2");
+                "WHERE ROWNUM <= " + num);
             
             rst = stmt.executeQuery(
                 "SELECT fp.USER1_ID, fp.USER2_ID, " +
@@ -416,18 +416,18 @@ public final class StudentFakebookOracle extends FakebookOracle {
                 "u2.First_Name, u2.Last_Name, u2.YEAR_OF_BIRTH " +
                 "FROM final_pairs fp " +
                 "LEFT JOIN " + UsersTable + " u1 " +
-                "ON (u1.USER_ID = fp.USER1_ID)" +
+                "ON (u1.USER_ID = fp.USER1_ID) " +
                 "LEFT JOIN " + UsersTable + " u2 " +
                 "ON (u2.USER_ID = fp.USER2_ID) " +
                 "LEFT JOIN tag_photos t " +
-                "ON (t.USER1_ID = fp.USER1_ID AND t.USER2_ID = fp.USER2_ID) ");
+                "ON (t.USER1_ID = fp.USER1_ID AND t.USER2_ID = fp.USER2_ID)");
 
             while (rst.next()) {
-                int user1Id = rst.getInt(1);
-                int user2Id = rst.getInt(2);
-                int photoId = rst.getInt(3);
+                long user1Id = rst.getLong(1);
+                long user2Id = rst.getLong(2);
+                long photoId = rst.getLong(3);
                 String link = rst.getString(4);
-                int albumId = rst.getInt(5);
+                long albumId = rst.getLong(5);
                 String albumName = rst.getString(6);
                 String user1First = rst.getString(7);
                 String user1Last = rst.getString(8);
@@ -445,10 +445,10 @@ public final class StudentFakebookOracle extends FakebookOracle {
             }
 
             // Drop views
-            rst = stmt.executeQuery("DROP VIEW pairs");
-            rst = stmt.executeQuery("DROP VIEW already_friends");
-            rst = stmt.executeQuery("DROP VIEW tag_photos");
-            rst = stmt.executeQuery("DROP VIEW final_pairs");
+            stmt.executeUpdate("DROP VIEW pairs");
+            stmt.executeUpdate("DROP VIEW already_friends");
+            stmt.executeUpdate("DROP VIEW tag_photos");
+            stmt.executeUpdate("DROP VIEW final_pairs");
 
             // * Close resources being used
             rst.close();
@@ -522,10 +522,7 @@ public final class StudentFakebookOracle extends FakebookOracle {
             
             int eventCount = 0;
             while (rst.next()) {
-                if (rst.isFirst()) {
-                    eventCount = rst.getInt(2);
-                    break;
-                }
+                eventCount = rst.getInt(2);
             }
             EventStateInfo info = new EventStateInfo(eventCount);
 
@@ -570,7 +567,63 @@ public final class StudentFakebookOracle extends FakebookOracle {
                 UserInfo young = new UserInfo(80000000, "Neil", "deGrasse Tyson");
                 return new AgeInfo(old, young);
             */
-            return new AgeInfo(new UserInfo(-1, "UNWRITTEN", "UNWRITTEN"), new UserInfo(-1, "UNWRITTEN", "UNWRITTEN")); // placeholder for compilation
+            // -- Get user's friends
+            stmt.executeUpdate(
+                "CREATE VIEW user_friends AS " +
+                "SELECT f1.USER2_ID AS FRIEND_USER_ID " +
+                "FROM " + FriendsTable + " f1 " +
+                "WHERE f1.USER1_ID = " + userID + " " +
+                "UNION " +
+                "SELECT f2.USER1_ID AS FRIEND_USER_ID " +
+                "FROM " + FriendsTable + " f2 " +
+                "WHERE f2.USER2_ID = " + userID);
+
+            // -- Get youngest friend
+            ResultSet rst = stmt.executeQuery(
+                "SELECT * FROM ( " +
+                "SELECT u.USER_ID, u.First_Name, u.Last_Name " +
+                "FROM user_friends f " +
+                "LEFT JOIN " + UsersTable + " u " +
+                "ON f.FRIEND_USER_ID = u.USER_ID " +
+                "ORDER BY u.YEAR_OF_BIRTH ASC, u.MONTH_OF_BIRTH ASC, u.DAY_OF_BIRTH ASC, u.USER_ID DESC) " +
+                "WHERE ROWNUM <= 1");
+
+            long youngId = 0;
+            String youngFirst = "";
+            String youngLast = "";
+            while (rst.next()) {
+                youngId = rst.getLong(1);
+                youngFirst = rst.getString(2);
+                youngLast = rst.getString(3);
+            }
+            UserInfo young = new UserInfo(youngId, youngFirst, youngLast);
+
+            // -- Get oldest friend
+            rst = stmt.executeQuery(
+                "SELECT * FROM ( " +
+                "SELECT u.USER_ID, u.First_Name, u.Last_Name " +
+                "FROM user_friends f " +
+                "LEFT JOIN " + UsersTable + " u " +
+                "ON f.FRIEND_USER_ID = u.USER_ID " +
+                "ORDER BY u.YEAR_OF_BIRTH DESC, u.MONTH_OF_BIRTH DESC, u.DAY_OF_BIRTH DESC, u.USER_ID DESC) " +
+                "WHERE ROWNUM <= 1");
+
+            long oldId = 0;
+            String oldFirst = "";
+            String oldLast = "";
+            while (rst.next()) {
+                oldId = rst.getLong(1);
+                oldFirst = rst.getString(2);
+                oldLast = rst.getString(3);
+            }
+            UserInfo old = new UserInfo(oldId, oldFirst, oldLast);
+
+            stmt.executeUpdate("DROP VIEW user_friends");
+
+            rst.close();
+            stmt.close();
+
+            return new AgeInfo(young, old);
         } catch (SQLException e) {
             System.err.println(e.getMessage());
             return new AgeInfo(new UserInfo(-1, "ERROR", "ERROR"), new UserInfo(-1, "ERROR", "ERROR"));

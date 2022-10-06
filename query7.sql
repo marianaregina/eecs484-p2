@@ -18,4 +18,4 @@ SELECT * FROM (
     GROUP BY C.STATE_NAME
     ORDER BY STATE_NAME ASC
 )
-WHERE eventCount = 18;
+WHERE eventCount = <n>;

@@ -38,7 +38,7 @@ CREATE VIEW tag_photos AS
             A.ALBUM_ID AS ALBUM_ID, A.ALBUM_NAME AS ALBUM_NAME 
     FROM pairs, project2.Public_Tags T2, project2.Public_Tags T1 
         LEFT JOIN project2.Public_Photos P ON T1.TAG_PHOTO_ID = P.PHOTO_ID
-        LEFT JOIN project2.Public_ALbums A ON P.ALBUM_ID = A.ALBUM_ID
+        LEFT JOIN project2.Public_Albums A ON P.ALBUM_ID = A.ALBUM_ID
     WHERE T1.TAG_PHOTO_ID = T2.TAG_PHOTO_ID 
             AND T1.TAG_SUBJECT_ID = pairs.USER1_ID
             AND T2.TAG_SUBJECT_ID = pairs.USER2_ID;
@@ -54,7 +54,7 @@ FROM (
     GROUP BY (p.USER1_ID, p.USER2_ID)
     ORDER BY COUNT(*) DESC, USER1_ID ASC, USER2_ID DESC
 )
-WHERE ROWNUM <= 2;
+WHERE ROWNUM <= 5;
 
 SELECT fp.USER1_ID, fp.USER2_ID,
         t.PHOTO_ID, t.PHOTO_LINK, t.ALBUM_ID, t.ALBUM_NAME,
