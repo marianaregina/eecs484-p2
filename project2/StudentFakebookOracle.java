@@ -331,6 +331,67 @@ public final class StudentFakebookOracle extends FakebookOracle {
                 tp.addTaggedUser(u3);
                 results.add(tp);
             */
+            // -- get top N tags
+            ResultSet rst = stmt.executeQuery(
+                "SELECT * FROM ( " +
+                "SELECT T.TAG_PHOTO_ID, COUNT(*) AS num_tagged_users " +
+                "FROM " + TagsTable + " T " +
+                "GROUP BY T.TAG_PHOTO_ID " +
+                "ORDER BY num_tagged_users DESC, T.TAG_PHOTO_ID ASC) " +
+                "WHERE ROWNUM <= " + num);
+
+            ArrayList<Long> photo_ids = new ArrayList<Long>();
+            while (rst.next()) {
+                photo_ids.add(rst.getLong(1));
+            }
+
+            for (int i = 0; i < photo_ids.size(); ++i) {
+                long currPhotoId = photo_ids.get(i);
+                rst = stmt.executeQuery(
+                    "SELECT U.USER_ID, U.First_Name, U.Last_Name, " +
+                    "A.ALBUM_ID, A.ALBUM_NAME, P.PHOTO_ID, P.PHOTO_LINK " +
+                    "FROM " + TagsTable + " T " +
+                    "LEFT JOIN " + UsersTable + " U " +
+                    "ON T.TAG_SUBJECT_ID = U.USER_ID " +
+                    "LEFT JOIN " + PhotosTable + " P " +
+                    "ON P.PHOTO_ID = " + currPhotoId + " " +
+                    "LEFT JOIN " + AlbumsTable + " A " +
+                    "ON P.ALBUM_ID = A.ALBUM_ID " +
+                    "WHERE T.TAG_PHOTO_ID = " + currPhotoId + " " +
+                    "ORDER BY U.USER_ID ASC");
+                
+                long photoId = 0;
+                long albumId = 0;
+                String link = "";
+                String albumName = "";
+                PhotoInfo p = new PhotoInfo(photoId, albumId, link, albumName);
+                TaggedPhotoInfo tp = new TaggedPhotoInfo(p);
+
+                while (rst.next()) {
+                    if (rst.isFirst()) {
+                        albumId = rst.getLong(4);
+                        albumName = rst.getString(5);
+                        photoId = rst.getLong(6);
+                        link = rst.getString(7);
+
+                        p = new PhotoInfo(photoId, albumId, link, albumName);
+                        tp = new TaggedPhotoInfo(p);
+                    }
+                    long userId = rst.getLong(1);
+                    String fName = rst.getString(2);
+                    String lName = rst.getString(3);
+                    
+                    UserInfo u = new UserInfo(userId, fName, lName);
+                   tp.addTaggedUser(u);
+                }
+                results.add(tp);
+            }
+
+            // * Close resources being used
+            rst.close();
+            stmt.close();
+
+            return results;
         } catch (SQLException e) {
             System.err.println(e.getMessage());
         }
