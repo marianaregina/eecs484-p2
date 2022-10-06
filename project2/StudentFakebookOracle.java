@@ -187,7 +187,8 @@ public final class StudentFakebookOracle extends FakebookOracle {
                 "FROM " + UsersTable + " " +
                 "GROUP BY First_Name " +
                 "ORDER BY nameCount DESC " +
-                ") WHERE nameCount = " + commonCount);
+                ") WHERE nameCount = " + commonCount + " " +
+                "ORDER BY First_Name ASC");
 
             while (rst.next()) {
                 info.addCommonName(rst.getString(1));
@@ -223,6 +224,33 @@ public final class StudentFakebookOracle extends FakebookOracle {
                 results.add(u1);
                 results.add(u2);
             */
+            ResultSet rst = stmt.executeQuery(
+                "SELECT U.USER_ID, U.First_Name, U.Last_Name " +
+                "FROM " + UsersTable + " U " +
+                "LEFT JOIN (" +
+                "SELECT p1.USER_ID " +
+                "FROM " + UsersTable + " p1 " +
+                "MINUS " +
+                "SELECT DISTINCT f1.USER1_ID " +
+                "FROM " + FriendsTable + " f1 " +
+                "MINUS " +
+                "SELECT DISTINCT f2.USER2_ID " +
+                "FROM " + FriendsTable + " f2 " +
+                ") have_no_friends " +
+                "ON have_no_friends.USER_ID = U.USER_ID " +
+                "ORDER BY U.USER_ID ASC");
+            
+            while (rst.next()) {
+                int tempId = rst.getInt(1);
+                String tempFirst = rst.getString(2);
+                String tempLast = rst.getString(3);
+                UserInfo u1 = new UserInfo(tempId, tempFirst, tempLast);
+                results.add(u1);
+            }
+
+            // * Close resources being used
+            rst.close();
+            stmt.close(); // if you close the statement first, the result set gets closed automatically
         } catch (SQLException e) {
             System.err.println(e.getMessage());
         }
@@ -248,6 +276,29 @@ public final class StudentFakebookOracle extends FakebookOracle {
                 results.add(u1);
                 results.add(u2);
             */
+            ResultSet rst = stmt.executeQuery(
+                "SELECT U.USER_ID, U.First_Name, U.Last_Name " +
+                "FROM " + UsersTable + " U " +
+                "LEFT JOIN " + CurrentCitiesTable + " C " +
+                "ON (U.USER_ID = C.USER_ID) " +
+                "LEFT JOIN " + HometownCitiesTable + " H " +
+                "ON (U.USER_ID = H.USER_ID) " +
+                "WHERE C.CURRENT_CITY_ID IS NOT NULL " +
+                "AND H.HOMETOWN_CITY_ID IS NOT NULL " +
+                "AND C.CURRENT_CITY_ID != H.HOMETOWN_CITY_ID " +
+                "ORDER BY U.USER_ID ASC");
+
+            while (rst.next()) {
+                int tempId = rst.getInt(1);
+                String tempFirst = rst.getString(2);
+                String tempLast = rst.getString(3);
+                UserInfo u1 = new UserInfo(tempId, tempFirst, tempLast);
+                results.add(u1);
+            }
+
+            // * Close resources being used
+            rst.close();
+            stmt.close();
         } catch (SQLException e) {
             System.err.println(e.getMessage());
         }
@@ -305,15 +356,105 @@ public final class StudentFakebookOracle extends FakebookOracle {
         try (Statement stmt = oracle.createStatement(FakebookOracleConstants.AllScroll,
                 FakebookOracleConstants.ReadOnly)) {
             /*
-                EXAMPLE DATA STRUCTURE USAGE
-                ============================================
-                UserInfo u1 = new UserInfo(93103, "Romeo", "Montague");
-                UserInfo u2 = new UserInfo(93113, "Juliet", "Capulet");
-                MatchPair mp = new MatchPair(u1, 1597, u2, 1597);
-                PhotoInfo p = new PhotoInfo(167, 309, "www.photolink.net", "Tragedy");
+            EXAMPLE DATA STRUCTURE USAGE
+            ============================================
+            UserInfo u1 = new UserInfo(93103, "Romeo", "Montague");
+            UserInfo u2 = new UserInfo(93113, "Juliet", "Capulet");
+            MatchPair mp = new MatchPair(u1, 1597, u2, 1597);
+            PhotoInfo p = new PhotoInfo(167, 309, "www.photolink.net", "Tragedy");
+            mp.addSharedPhoto(p);
+            results.add(mp);
+            */
+            ResultSet rst = stmt.executeQuery(
+                "CREATE VIEW pairs AS " +
+                "SELECT u1.USER_ID AS USER1_ID, u2.USER_ID AS USER2_ID " +
+                "FROM " + UsersTable + " u1, " + UsersTable + " u2 " +
+                "WHERE (abs(u1.YEAR_OF_BIRTH - u2.YEAR_OF_BIRTH) <= 2) " +
+                "AND (u1.GENDER = u2.GENDER) " +
+                "AND (u1.USER_ID < u2.USER_ID) " +
+                "AND (u1.USER_ID != u2.USER_ID)");
+
+            rst = stmt.executeQuery(
+                "CREATE VIEW already_friends AS " +
+                "SELECT p.USER1_ID AS USER1_ID, p.USER2_ID AS USER2_ID " +
+                "FROM pairs p, " + FriendsTable + " f " +
+                "WHERE ((p.USER1_ID = f.USER1_ID) " +
+                "AND (p.USER2_ID = f.USER2_ID))");
+
+            rst = stmt.executeQuery(
+                "SELECT * FROM pairs p MINUS " +
+                "SELECT * FROM already_friends");
+
+            rst = stmt.executeQuery(
+                "CREATE VIEW tag_photos AS " +
+                "SELECT pairs.USER1_ID AS USER1_ID, pairs.USER2_ID AS USER2_ID, " +
+                "T1.TAG_PHOTO_ID AS PHOTO_ID, P.PHOTO_LINK AS PHOTO_LINK, " +
+                "A.ALBUM_ID AS ALBUM_ID, A.ALBUM_NAME AS ALBUM_NAME " +
+                "FROM pairs, " + TagsTable + " T2 " + TagsTable + " T1 " +
+                "LEFT JOIN " + PhotosTable + " P ON T1.TAG_PHOTO_ID = P.PHOTO_ID " +
+                "LEFT JOIN " + AlbumsTable + " A ON P.ALBUM_ID = A.ALBUM_ID " +
+                "WHERE T1.TAG_PHOTO_ID = T2.TAG_PHOTO_ID " +
+                "AND T1.TAG_SUBJECT_ID = pairs.USER1_ID " +
+                "AND T2.TAG_SUBJECT_ID = pairs.USER2_ID ");
+        
+            rst = stmt.executeQuery(
+                "CREATE VIEW final_pairs AS " +
+                "SELECT * FROM ( " +
+                "SELECT p.USER1_ID, p.USER2_ID " +
+                "FROM tag_photos t " +
+                "LEFT JOIN pairs p " +
+                "ON (t.USER1_ID = p.USER1_ID AND t.USER2_ID = p.USER2_ID) " +
+                "WHERE t.PHOTO_ID IS NOT NULL " +
+                "GROUP BY (p.USER1_ID, p.USER2_ID) " +
+                "ORDER BY COUNT(*) DESC, USER1_ID ASC, USER2_ID DESC) " +
+                "WHERE ROWNUM <= 2");
+            
+            rst = stmt.executeQuery(
+                "SELECT fp.USER1_ID, fp.USER2_ID, " +
+                "t.PHOTO_ID, t.PHOTO_LINK, t.ALBUM_ID, t.ALBUM_NAME, " +
+                "u1.First_Name, u1.Last_Name, u1.YEAR_OF_BIRTH, " +
+                "u2.First_Name, u2.Last_Name, u2.YEAR_OF_BIRTH " +
+                "FROM final_pairs fp " +
+                "LEFT JOIN " + UsersTable + " u1 " +
+                "ON (u1.USER_ID = fp.USER1_ID)" +
+                "LEFT JOIN " + UsersTable + " u2 " +
+                "ON (u2.USER_ID = fp.USER2_ID) " +
+                "LEFT JOIN tag_photos t " +
+                "ON (t.USER1_ID = fp.USER1_ID AND t.USER2_ID = fp.USER2_ID) ");
+
+            while (rst.next()) {
+                int user1Id = rst.getInt(1);
+                int user2Id = rst.getInt(2);
+                int photoId = rst.getInt(3);
+                String link = rst.getString(4);
+                int albumId = rst.getInt(5);
+                String albumName = rst.getString(6);
+                String user1First = rst.getString(7);
+                String user1Last = rst.getString(8);
+                int user1Year = rst.getInt(9);
+                String user2First = rst.getString(10);
+                String user2Last = rst.getString(11);
+                int user2Year = rst.getInt(12);
+
+                UserInfo u1 = new UserInfo(user1Id, user1First, user1Last);
+                UserInfo u2 = new UserInfo(user2Id, user2First, user2Last);
+                MatchPair mp = new MatchPair(u1, user1Year, u2, user2Year);
+                PhotoInfo p = new PhotoInfo(photoId, albumId, link, albumName);
                 mp.addSharedPhoto(p);
                 results.add(mp);
-            */
+            }
+
+            // Drop views
+            rst = stmt.executeQuery("DROP VIEW pairs");
+            rst = stmt.executeQuery("DROP VIEW already_friends");
+            rst = stmt.executeQuery("DROP VIEW tag_photos");
+            rst = stmt.executeQuery("DROP VIEW final_pairs");
+
+            // * Close resources being used
+            rst.close();
+            stmt.close();
+
+            return results;
         } catch (SQLException e) {
             System.err.println(e.getMessage());
         }

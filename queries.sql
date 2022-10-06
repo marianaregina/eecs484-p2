@@ -32,18 +32,10 @@ FROM (
     FROM project2.Public_Users
     GROUP BY First_Name
     ORDER BY nameCount DESC)
-WHERE nameCount = <n>;
+WHERE nameCount = <n>
+ORDER BY First_Name ASC;
 
 -- Query 2 --
--- SELECT p1.USER_ID, First_Name, Last_Name
--- FROM project2.Public_Users p1
--- MINUS 
--- SELECT DISTINCT f1.USER1_ID
--- FROM project2.Public_Friends f1
--- MINUS
--- SELECT DISTINCT f2.USER2_ID
--- FROM project2.Public_Friends f2;
-
 SELECT U.USER_ID, U.First_Name, U.Last_Name
 FROM project2.Public_Users U
 LEFT JOIN (
@@ -91,7 +83,7 @@ FROM
 )
 WHERE ROWNUM <=5;
 
-SELECT num_tagged_users, T.TAG_PHOTO_ID, P.PHOTO_LINK, U.USER_ID, U.First_Name, U.Last_Name
+SELECT T.num_tagged_users, T.TAG_PHOTO_ID, P.PHOTO_LINK, U.USER_ID, U.First_Name, U.Last_Name
 FROM top_n_tags T
 LEFT JOIN project2.Public_Photos P
 ON (T.TAG_PHOTO_ID = P.PHOTO_ID)
@@ -174,6 +166,7 @@ ON (u2.USER_ID = fp.USER2_ID)
 LEFT JOIN tag_photos t
 ON (t.USER1_ID = fp.USER1_ID AND t.USER2_ID = fp.USER2_ID);
 
+DROP VIEWS!!!!
 -- Query 6 --
 CREATE VIEW mutuals AS
     SELECT u1.USER1_ID AS USER1_ID, u2.USER2_ID AS USER2_ID, u1.USER2_ID AS MUTUAL
