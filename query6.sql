@@ -55,8 +55,7 @@ CREATE VIEW fifth_case AS
           AND NOT EXISTS (
             SELECT friends.USER1_ID, friends.USER2_ID 
             FROM project2.Public_Friends friends
-            WHERE f1.USER2_ID = friends.USER1_ID AND f2.USER1_ID = friends.USER2_ID
-          );
+            WHERE f1.USER2_ID = friends.USER1_ID AND f2.USER1_ID = friends.USER2_ID);
 
 -- SIXTH CASE: (u1, m) (u2, m) --> u1, u2 < m && u2 < u1
 -- pair: (f2.USER1_ID, f1.USER1_ID)
@@ -67,8 +66,7 @@ CREATE VIEW sixth_case AS
           AND NOT EXISTS (
             SELECT friends.USER1_ID, friends.USER2_ID 
             FROM project2.Public_Friends friends
-            WHERE f2.USER1_ID = friends.USER1_ID AND f1.USER1_ID = friends.USER2_ID
-          );
+            WHERE f2.USER1_ID = friends.USER1_ID AND f1.USER1_ID = friends.USER2_ID);
 
 CREATE VIEW mutuals AS
     SELECT * FROM first_case
@@ -92,8 +90,7 @@ CREATE VIEW has_mutuals AS
         FROM mutuals m
         GROUP BY (USER1_ID, USER2_ID)
         HAVING COUNT (*) >= 1
-        ORDER BY COUNT(*) DESC
-    )
+        ORDER BY COUNT(*) DESC)
     WHERE ROWNUM <= 5;
 
 SELECT h.USER1_ID AS USER1_ID, u1.FIRST_NAME AS U1_FIRST, u1.LAST_NAME AS U1_LAST, 
@@ -102,4 +99,13 @@ SELECT h.USER1_ID AS USER1_ID, u1.FIRST_NAME AS U1_FIRST, u1.LAST_NAME AS U1_LAS
 FROM has_mutuals h, mutuals m, project2.Public_Users u1, project2.Public_Users u2, project2.Public_Users mut
 WHERE (h.USER1_ID = u1.USER_ID AND h.USER2_ID = u2.USER_ID 
       AND (m.USER1_ID = h.USER1_ID AND m.USER2_ID = h.USER2_ID) 
-      AND m.MUTUAL = mut.USER_ID);
+      AND m.MUTUAL = mut.USER_ID)
+      
+DROP VIEW first_case;
+DROP VIEW second_case;
+DROP VIEW third_case;
+DROP VIEW fourth_case;
+DROP VIEW fifth_case;
+DROP VIEW sixth_case;
+DROP VIEW mutuals;
+DROP VIEW has_mutuals;
