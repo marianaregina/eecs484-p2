@@ -426,6 +426,7 @@ public final class StudentFakebookOracle extends FakebookOracle {
             mp.addSharedPhoto(p);
             results.add(mp);
             */
+            // birth year and same gender
             stmt.executeUpdate(
                 "CREATE VIEW pairs AS " +
                 "SELECT u1.USER_ID AS USER1_ID, u2.USER_ID AS USER2_ID " +
@@ -435,6 +436,7 @@ public final class StudentFakebookOracle extends FakebookOracle {
                 "AND (u1.USER_ID < u2.USER_ID) " +
                 "AND (u1.USER_ID != u2.USER_ID)");
 
+            // not friends
             stmt.executeUpdate(
                 "CREATE VIEW already_friends AS " +
                 "SELECT p.USER1_ID AS USER1_ID, p.USER2_ID AS USER2_ID " +
@@ -442,22 +444,25 @@ public final class StudentFakebookOracle extends FakebookOracle {
                 "WHERE ((p.USER1_ID = f.USER1_ID) " +
                 "AND (p.USER2_ID = f.USER2_ID))");
 
-            ResultSet rst = stmt.executeQuery(
-                "SELECT * FROM pairs p MINUS " +
+            // -- the rows that are returned are already friends -> remove from pairs table
+            stmt.executeUpdate(
+                "SELECT * FROM pairs p " +
+                "MINUS " +
                 "SELECT * FROM already_friends");
-
+            // -- pairs is left with every valid pair
+            
             stmt.executeUpdate(
                 "CREATE VIEW tag_photos AS " +
                 "SELECT pairs.USER1_ID AS USER1_ID, pairs.USER2_ID AS USER2_ID, " +
                 "T1.TAG_PHOTO_ID AS PHOTO_ID, P.PHOTO_LINK AS PHOTO_LINK, " +
                 "A.ALBUM_ID AS ALBUM_ID, A.ALBUM_NAME AS ALBUM_NAME " +
-                "FROM pairs, " + TagsTable + " T2 " + TagsTable + " T1 " +
+                "FROM pairs, " + TagsTable + " T2, " + TagsTable + " T1 " + 
                 "LEFT JOIN " + PhotosTable + " P ON T1.TAG_PHOTO_ID = P.PHOTO_ID " +
                 "LEFT JOIN " + AlbumsTable + " A ON P.ALBUM_ID = A.ALBUM_ID " +
                 "WHERE T1.TAG_PHOTO_ID = T2.TAG_PHOTO_ID " +
                 "AND T1.TAG_SUBJECT_ID = pairs.USER1_ID " +
                 "AND T2.TAG_SUBJECT_ID = pairs.USER2_ID");
-        
+
             stmt.executeUpdate(
                 "CREATE VIEW final_pairs AS " +
                 "SELECT * FROM ( " +
@@ -467,10 +472,10 @@ public final class StudentFakebookOracle extends FakebookOracle {
                 "ON (t.USER1_ID = p.USER1_ID AND t.USER2_ID = p.USER2_ID) " +
                 "WHERE t.PHOTO_ID IS NOT NULL " +
                 "GROUP BY (p.USER1_ID, p.USER2_ID) " +
-                "ORDER BY COUNT(*) DESC, USER1_ID ASC, USER2_ID DESC) " +
+                "ORDER BY COUNT(*) DESC, USER1_ID ASC, USER2_ID ASC) " +
                 "WHERE ROWNUM <= " + num);
-            
-            rst = stmt.executeQuery(
+
+            ResultSet rst = stmt.executeQuery(
                 "SELECT fp.USER1_ID, fp.USER2_ID, " +
                 "t.PHOTO_ID, t.PHOTO_LINK, t.ALBUM_ID, t.ALBUM_NAME, " +
                 "u1.First_Name, u1.Last_Name, u1.YEAR_OF_BIRTH, " +
@@ -481,31 +486,31 @@ public final class StudentFakebookOracle extends FakebookOracle {
                 "LEFT JOIN " + UsersTable + " u2 " +
                 "ON (u2.USER_ID = fp.USER2_ID) " +
                 "LEFT JOIN tag_photos t " +
-                "ON (t.USER1_ID = fp.USER1_ID AND t.USER2_ID = fp.USER2_ID)");
+                "ON (t.USER1_ID = fp.USER1_ID AND t.USER2_ID = fp.USER2_ID) " +
+                "ORDER BY fp.USER1_ID ASC, fp.USER2_ID ASC, t.PHOTO_ID ASC");
 
             while (rst.next()) {
-                long user1Id = rst.getLong(1);
-                long user2Id = rst.getLong(2);
+                long u1Id = rst.getLong(1);
+                long u2Id = rst.getLong(2);
                 long photoId = rst.getLong(3);
                 String link = rst.getString(4);
                 long albumId = rst.getLong(5);
                 String albumName = rst.getString(6);
-                String user1First = rst.getString(7);
-                String user1Last = rst.getString(8);
-                int user1Year = rst.getInt(9);
-                String user2First = rst.getString(10);
-                String user2Last = rst.getString(11);
-                int user2Year = rst.getInt(12);
+                String u1FName = rst.getString(7);
+                String u1LName = rst.getString(8);
+                int u1Year = rst.getInt(9);                
+                String u2FName = rst.getString(10);
+                String u2LName = rst.getString(11);
+                int u2Year = rst.getInt(12);
 
-                UserInfo u1 = new UserInfo(user1Id, user1First, user1Last);
-                UserInfo u2 = new UserInfo(user2Id, user2First, user2Last);
-                MatchPair mp = new MatchPair(u1, user1Year, u2, user2Year);
+                UserInfo u1 = new UserInfo(u1Id, u1FName, u1LName);
+                UserInfo u2 = new UserInfo(u2Id, u2FName, u2LName);
+                MatchPair mp = new MatchPair(u1, u1Year, u2, u2Year);
                 PhotoInfo p = new PhotoInfo(photoId, albumId, link, albumName);
                 mp.addSharedPhoto(p);
                 results.add(mp);
             }
 
-            // Drop views
             stmt.executeUpdate("DROP VIEW pairs");
             stmt.executeUpdate("DROP VIEW already_friends");
             stmt.executeUpdate("DROP VIEW tag_photos");
