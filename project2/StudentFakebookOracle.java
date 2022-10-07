@@ -717,6 +717,43 @@ public final class StudentFakebookOracle extends FakebookOracle {
                 SiblingInfo si = new SiblingInfo(u1, u2);
                 results.add(si);
             */
+            ResultSet rst = stmt.executeQuery(
+                "SELECT U1.USER_ID AS U1_ID, U1.First_Name AS U1_FNAME, U1.Last_Name AS U1_LNAME, " +
+                "U2.USER_ID AS U2_ID, U2.First_Name AS U2_FNAME, U2.Last_Name AS U2_LNAME " +
+                "FROM " + UsersTable + " U1 " +
+                "LEFT JOIN " + UsersTable + " U2 " +
+                "ON U1.USER_ID < U2.USER_ID " +
+                "LEFT JOIN " + HometownCitiesTable + " H1 " +
+                "ON H1.USER_ID = U1.USER_ID " +
+                "LEFT JOIN " + HometownCitiesTable + " H2 " +
+                "ON H2.USER_ID = U2.USER_ID " +
+                "LEFT JOIN " + FriendsTable + " F " +
+                "ON F.USER1_ID = U1.USER_ID AND F.USER2_ID = U2.USER_ID " +
+                "WHERE U1.USER_ID != U2.USER_ID " +
+                "AND U1.Last_Name = U2.Last_Name " +
+                "AND ABS(U1.YEAR_OF_BIRTH - U2.YEAR_OF_BIRTH) < 10 " +
+                "AND H1.HOMETOWN_CITY_ID = H2.HOMETOWN_CITY_ID " +
+                "AND F.USER1_ID = U1.USER_ID AND F.USER2_ID = U2.USER_ID " +
+                "ORDER BY U1.USER_ID ASC, U2.USER_ID ASC");
+
+            while (rst.next()) {
+                long u1Id = rst.getLong(1);
+                String u1FName = rst.getString(2);
+                String u1LName = rst.getString(3);
+                long u2Id = rst.getLong(1);
+                String u2FName = rst.getString(2);
+                String u2LName = rst.getString(3);
+                
+                UserInfo u1 = new UserInfo(u1Id, u1FName, u1LName);
+                UserInfo u2 = new UserInfo(u2Id, u2FName, u2LName);
+                SiblingInfo si = new SiblingInfo(u1, u2);
+                results.add(si);
+            }
+
+            rst.close();
+            stmt.close();
+
+            return results;
         } catch (SQLException e) {
             System.err.println(e.getMessage());
         }
