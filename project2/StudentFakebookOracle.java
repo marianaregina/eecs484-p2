@@ -894,9 +894,9 @@ public final class StudentFakebookOracle extends FakebookOracle {
                 long u1Id = rst.getLong(1);
                 String u1FName = rst.getString(2);
                 String u1LName = rst.getString(3);
-                long u2Id = rst.getLong(1);
-                String u2FName = rst.getString(2);
-                String u2LName = rst.getString(3);
+                long u2Id = rst.getLong(4);
+                String u2FName = rst.getString(5);
+                String u2LName = rst.getString(6);
                 
                 UserInfo u1 = new UserInfo(u1Id, u1FName, u1LName);
                 UserInfo u2 = new UserInfo(u2Id, u2FName, u2LName);
