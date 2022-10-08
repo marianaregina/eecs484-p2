@@ -90,7 +90,7 @@ CREATE VIEW has_mutuals AS
         FROM mutuals m
         GROUP BY (USER1_ID, USER2_ID)
         HAVING COUNT (*) >= 1
-        ORDER BY COUNT(*) DESC)
+        ORDER BY COUNT(*) DESC, USER1_ID ASC, USER2_ID ASC)
     WHERE ROWNUM <= 5;
 
 CREATE VIEW PAIRS AS
