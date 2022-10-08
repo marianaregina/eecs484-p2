@@ -665,13 +665,10 @@ public final class StudentFakebookOracle extends FakebookOracle {
                 "WHERE ROWNUM <= " + num);
 
             ResultSet rst = stmt.executeQuery(
-                "SELECT h.USER1_ID AS USER1_ID, u1.FIRST_NAME AS U1_FIRST, u1.LAST_NAME AS U1_LAST, " +
-                "h.USER2_ID AS USER2_ID, u2.FIRST_NAME AS U2_FIRST, u2.LAST_NAME AS U2_LAST, " +
-                "m.MUTUAL AS M_ID, mut.FIRST_NAME AS M_FIRST, mut.LAST_NAME AS M_LAST " +
-                "FROM has_mutuals h, mutuals m, " + UsersTable + " u1, " + UsersTable + " u2, " + UsersTable + " mut " +
-                "WHERE (h.USER1_ID = u1.USER_ID AND h.USER2_ID = u2.USER_ID " +
-                "AND (m.USER1_ID = h.USER1_ID AND m.USER2_ID = h.USER2_ID) " + 
-                "AND m.MUTUAL = mut.USER_ID)");
+                "SELECT H.USER1_ID AS U1_ID, U1.FIRST_NAME AS U1_FNAME, U1.LAST_NAME AS U1_LNAME, " +
+                "H.USER2_ID AS U2_ID, U2.FIRST_NAME AS U2_FNAME, U2.LAST_NAME AS U2_LNAME " +
+                "FROM has_mutuals H, " + UsersTable + " U1, " + UsersTable + " U2 " +
+                "WHERE U1.USER_ID = H.USER1_ID AND U2.USER_ID = H.USER2_ID");
 
             while (rst.next()) {
                 long u1Id = rst.getLong(1);
@@ -680,16 +677,32 @@ public final class StudentFakebookOracle extends FakebookOracle {
                 long u2Id = rst.getLong(4);
                 String u2FName = rst.getString(5);
                 String u2LName = rst.getString(6);
-                long u3Id = rst.getLong(7);
-                String u3FName = rst.getString(8);
-                String u3LName = rst.getString(9);
 
                 UserInfo u1 = new UserInfo(u1Id, u1FName, u1LName);
                 UserInfo u2 = new UserInfo(u2Id, u2FName, u2LName);
-                UserInfo u3 = new UserInfo(u3Id, u3FName, u3LName);
                 UsersPair up = new UsersPair(u1, u2);
-                up.addSharedFriend(u3);
+
+                Statement stmt2 = oracle.createStatement(FakebookOracleConstants.AllScroll,
+                FakebookOracleConstants.ReadOnly);
+                ResultSet rst2 = stmt2.executeQuery(
+                    "SELECT U.USER_ID, U.FIRST_NAME, U.LAST_NAME " +
+                    "FROM mutuals M " +
+                    "LEFT JOIN " + UsersTable + " U " +
+                    "ON U.USER_ID = M.MUTUAL " +
+                    "WHERE M.USER1_ID = " + u1Id + " AND M.USER2_ID = " + u2Id +
+                    "ORDER BY U.USER_ID");
+
+                while (rst2.next()) {
+                    long u3Id = rst2.getLong(1);
+                    String u3FName = rst2.getString(2);
+                    String u3LName = rst2.getString(3);
+
+                    UserInfo u3 = new UserInfo(u3Id, u3FName, u3LName);
+                    up.addSharedFriend(u3);
+                }
                 results.add(up);
+                rst2.close();
+                stmt2.close();
             }
 
             stmt.executeUpdate("DROP VIEW first_case");
